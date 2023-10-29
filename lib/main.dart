@@ -63,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     });
     _requestPermissions();
+    _loadRecordings();
   }
 
   Future<void> _requestPermissions() async {
@@ -105,6 +106,31 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _deleteRecording(int index) async {
+    final file = File(recordings[index]);
+    await file.delete();
+    setState(() {
+      recordings.removeAt(index);
+      if (selectedRecordingIndex == index) {
+        selectedRecordingIndex = -1;
+      }
+    });
+  }
+
+  Future<void> _loadRecordings() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final List<FileSystemEntity> fileList = directory.listSync();
+    final List<String> recordingList = [];
+    for (FileSystemEntity file in fileList) {
+      if (file.uri.pathSegments.last.endsWith('.m4a')) {
+        recordingList.add(file.uri.toFilePath());
+      }
+    }
+    setState(() {
+      recordings = recordingList;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,9 +163,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         selectedRecordingIndex = index;
                       });
                     },
-                    trailing: selectedRecordingIndex == index && isPlaying
-                        ? const Icon(Icons.pause)
-                        : const Icon(Icons.play_arrow),
+                    trailing: Wrap(
+                      spacing: 12, // space between two icons
+                      children: <Widget>[
+                        selectedRecordingIndex == index && isPlaying
+                            ? const Icon(Icons.pause)
+                            : const Icon(Icons.play_arrow),
+                        GestureDetector(
+                          onTap: () {
+                            _deleteRecording(index);
+                          },
+                          child: const Icon(Icons.delete),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
